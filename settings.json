@@ -1,0 +1,7 @@
+{
+  "rust-analyzer.linkedProjects": [
+    "./assiomp",
+    "./assimp-sys",
+    "./open-gl-rs"
+  ]
+}

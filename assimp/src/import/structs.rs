@@ -2,7 +2,7 @@
 
 use ffi::config::*;
 
-use math::Matrix4x4;
+use crate::math::Matrix4x4;
 
 /// Enumerates components of the Scene and Mesh data structures that can be excluded from the import
 /// using the `remove_component` step.

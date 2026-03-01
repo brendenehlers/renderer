@@ -21,8 +21,8 @@ use std::str;
 use ffi::*;
 use ffi::config::*;
 
-use math::matrix4::*;
-use scene::*;
+use crate::math::matrix4::*;
+use crate::scene::*;
 
 pub mod structs;
 use self::structs::*;
@@ -1091,7 +1091,7 @@ impl Importer {
         unsafe { aiGetExtensionList(&mut ext_list) };
 
         let extensions = ext_list.as_ref().split(';');
-        extensions.map(|x| x.trim_left_matches("*.").to_owned()).collect()
+        extensions.map(|x| x.trim_start_matches("*.").to_owned()).collect()
     }
 }
 

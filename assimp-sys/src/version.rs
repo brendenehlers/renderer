@@ -1,6 +1,6 @@
 use std::os::raw::{c_char, c_uint};
 
-extern {
+unsafe extern "C" {
     pub fn aiGetLegalString() -> *const c_char;
     pub fn aiGetVersionMinor() -> c_uint;
     pub fn aiGetVersionMajor() -> c_uint;

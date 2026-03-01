@@ -2,7 +2,7 @@ use std::slice::from_raw_parts;
 
 use ffi::AiNode;
 
-use math::Matrix4x4;
+use crate::math::Matrix4x4;
 
 define_type_and_iterator_indirect! {
     /// The `Node` type represents a node in the imported scene hierarchy.

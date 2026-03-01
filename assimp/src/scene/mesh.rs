@@ -1,10 +1,10 @@
 use ffi::{AiMesh, AiVector3D, AiBone, AiVertexWeight, AiColor4D};
 
-use math::vector3::{Vector3D, Vector3DIter};
-use math::color4::{Color4D, Color4DIter};
+use crate::math::vector3::{Vector3D, Vector3DIter};
+use crate::math::color4::{Color4D, Color4DIter};
 use super::face::{Face, FaceIter};
 
-use math::Matrix4x4;
+use crate::math::Matrix4x4;
 
 define_type_and_iterator_indirect! {
     /// Mesh type (incomplete)

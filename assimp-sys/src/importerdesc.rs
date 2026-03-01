@@ -25,7 +25,7 @@ pub struct AiImporterDesc {
     pub file_extensions: *const c_char,
 }
 
-extern {
+unsafe extern "C" {
     pub fn aiGetImporterDesc(
         extension: *const c_char) -> *const AiImporterDesc;
 }

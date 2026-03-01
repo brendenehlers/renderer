@@ -1,8 +1,8 @@
 use std::os::raw::{c_char, c_void};
 
 use crate::cfileio::*;
-use postprocess::*;
-use scene::*;
+use crate::postprocess::*;
+use crate::scene::*;
 use crate::types::*;
 
 #[repr(C)]
@@ -20,7 +20,7 @@ pub struct AiExportDataBlob {
     pub next: *mut AiExportDataBlob,
 }
 
-extern {
+unsafe extern "C" {
     pub fn aiGetExportFormatCount() -> usize;
 
     pub fn aiGetExportFormatDescription(

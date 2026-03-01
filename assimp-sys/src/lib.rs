@@ -1,21 +1,21 @@
 #[macro_use]
 extern crate bitflags;
 
-pub use anim::*;
-pub use camera::*;
-pub use cexport::*;
+pub use crate::anim::*;
+pub use crate::camera::*;
+pub use crate::cexport::*;
 pub use crate::cfileio::*;
-pub use cimport::*;
-pub use importerdesc::*;
-pub use light::*;
-pub use material::*;
-pub use mesh::*;
-pub use metadata::*;
-pub use postprocess::*;
-pub use scene::*;
-pub use texture::*;
+pub use crate::cimport::*;
+pub use crate::importerdesc::*;
+pub use crate::light::*;
+pub use crate::material::*;
+pub use crate::mesh::*;
+pub use crate::metadata::*;
+pub use crate::postprocess::*;
+pub use crate::scene::*;
+pub use crate::texture::*;
 pub use crate::types::*;
-pub use version::*;
+pub use crate::version::*;
 
 mod anim;
 mod camera;

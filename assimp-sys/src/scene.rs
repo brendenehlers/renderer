@@ -1,12 +1,12 @@
 use std::os::raw::{c_uint, c_void};
 
-use anim::*;
-use camera::*;
-use light::*;
-use material::*;
-use mesh::*;
-use metadata::*;
-use texture::*;
+use crate::anim::*;
+use crate::camera::*;
+use crate::light::*;
+use crate::material::*;
+use crate::mesh::*;
+use crate::metadata::*;
+use crate::texture::*;
 use crate::types::*;
 
 #[repr(C)]

@@ -1,9 +1,9 @@
 use std::os::raw::{c_char, c_float, c_int, c_uint, c_void};
 
 use crate::cfileio::*;
-use importerdesc::*;
-use postprocess::*;
-use scene::*;
+use crate::importerdesc::*;
+use crate::postprocess::*;
+use crate::scene::*;
 use crate::types::*;
 
 pub type AiLogStreamCallback = Option<unsafe extern "system" fn(*const c_char, *mut c_char)>;
@@ -24,7 +24,7 @@ pub type AiBool = c_int;
 pub const AI_FALSE: AiBool = 0;
 pub const AI_TRUE: AiBool = 1;
 
-extern {
+unsafe extern "C" {
     pub fn aiImportFile(
         file: *const c_char,
         flags: AiPostProcessSteps) -> *const AiScene;

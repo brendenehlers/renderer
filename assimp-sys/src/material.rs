@@ -119,7 +119,7 @@ pub struct AiMaterial {
     pub num_allocated: c_uint,
 }
 
-extern {
+unsafe extern "C" {
     pub fn aiGetMaterialProperty(
         mat: *const AiMaterial,
         key: *const c_char,

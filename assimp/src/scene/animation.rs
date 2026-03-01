@@ -32,21 +32,21 @@ define_type_and_iterator_indirect! {
 }
 
 impl<'a> NodeAnim<'a> {
-    pub fn get_position_key(&self, id: usize) -> Option<VectorKey> {
+    pub fn get_position_key(&self, id: usize) -> Option<VectorKey<'_>> {
         if id < self.num_position_keys as usize {
             unsafe { Some(VectorKey::from_raw(self.position_keys.offset(id as isize))) }
         } else {
             None
         }
     }
-    pub fn get_rotation_key(&self, id: usize) -> Option<QuatKey> {
+    pub fn get_rotation_key(&self, id: usize) -> Option<QuatKey<'_>> {
         if id < self.num_rotation_keys as usize {
             unsafe { Some(QuatKey::from_raw(self.rotation_keys.offset(id as isize))) }
         } else {
             None
         }
     }
-    pub fn get_scaling_key(&self, id: usize) -> Option<VectorKey> {
+    pub fn get_scaling_key(&self, id: usize) -> Option<VectorKey<'_>> {
         if id < self.num_scaling_keys as usize {
             unsafe { Some(VectorKey::from_raw(self.scaling_keys.offset(id as isize))) }
         } else {
@@ -56,7 +56,7 @@ impl<'a> NodeAnim<'a> {
 }
 
 impl<'a> Animation<'a> {
-    pub fn get_node_anim(&self, id: usize) -> Option<NodeAnim> {
+    pub fn get_node_anim(&self, id: usize) -> Option<NodeAnim<'_>> {
         if id < self.num_channels as usize {
             unsafe { Some(NodeAnim::from_raw(*(self.channels.offset(id as isize)))) }
         } else {

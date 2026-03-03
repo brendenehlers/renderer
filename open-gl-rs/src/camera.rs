@@ -1,3 +1,5 @@
+use std::ops::DerefMut;
+
 
 pub enum CameraMovement {
     FORWARD,
@@ -74,7 +76,7 @@ impl Camera {
         self.update_vectors();
     }
 
-    pub fn process_scoll(&mut self, y_offset: &f32) {
+    pub fn process_scroll(&mut self, y_offset: &f32) {
         self.zoom -= y_offset;
         if self.zoom < 1.0 {
             self.zoom = 1.0;

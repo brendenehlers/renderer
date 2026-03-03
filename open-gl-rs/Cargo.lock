@@ -747,6 +747,7 @@ dependencies = [
  "assimp",
  "gl",
  "glfw",
+ "image",
  "nalgebra-glm",
 ]
 

@@ -21,6 +21,7 @@ pub enum TextureType {
 pub struct Texture {
     pub id: u32,
     pub texture_type: TextureType,
+    pub path: String,
 }
 
 pub struct Mesh {

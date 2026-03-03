@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+
+use image::{ImageBuffer, Rgba};
+
 use crate::{mesh, shader};
 
 pub struct Model {
@@ -6,16 +10,15 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn load(path: &String) -> anyhow::Result<Model> {
-        let mut importer = assimp::Importer::new();
-        importer.triangulate(true);
-        importer.flip_uvs(true);
+    pub fn load(importer: &assimp::Importer, path: &str) -> anyhow::Result<Model> {
+        // let mut importer = assimp::Importer::new();
+        // importer.triangulate(true);
+        // importer.flip_uvs(true);
 
         let scene = match importer.read_file(path) {
-            Ok(s) => s,
+            Ok(scene) => scene,
             Err(s) => {
-                let msg = s.clone();
-                anyhow::bail!(msg)
+                anyhow::bail!(String::from(s))
             }
         };
 
@@ -25,7 +28,14 @@ impl Model {
         let directory = path.split_at(path.rfind('/').unwrap()).0;
 
         let mut meshes: Vec<mesh::Mesh> = vec![];
-        process_node(&scene.root_node(), &scene, &mut meshes);
+        let mut img_cache: HashMap<String, ImageBuffer<Rgba<u8>, Vec<u8>>> = HashMap::new();
+        process_node(
+            &scene.root_node(),
+            &scene,
+            &mut meshes,
+            directory,
+            &mut img_cache,
+        );
         todo!()
     }
 
@@ -34,20 +44,30 @@ impl Model {
     }
 }
 
-fn process_node(node: &assimp::Node, scene: &assimp::Scene, meshes: &mut Vec<mesh::Mesh>) {
-    // load meshes in to vec
+fn process_node(
+    node: &assimp::Node,
+    scene: &assimp::Scene,
+    meshes: &mut Vec<mesh::Mesh>,
+    dir: &str,
+    img_cache: &mut HashMap<String, ImageBuffer<Rgba<u8>, Vec<u8>>>,
+) {
+    println!("process_node: {:p} name={}", node.to_raw(), node.name());
     node.meshes().iter().for_each(|mesh| {
         let mesh = scene.mesh(*mesh as usize).unwrap();
-        meshes.push(process_mesh(&mesh, &scene));
+        meshes.push(process_mesh(&mesh, &scene, dir, img_cache).unwrap());
     });
 
-    // recursively process child nodes
     node.child_iter()
-        .for_each(|child| process_node(&child, scene, meshes));
+        .for_each(|child| process_node(&child, scene, meshes, dir, img_cache));
 }
 
-fn process_mesh(mesh: &assimp::Mesh, scene: &assimp::Scene) -> mesh::Mesh {
-    let mut vertices: Vec<mesh::Vertex> = mesh
+fn process_mesh(
+    mesh: &assimp::Mesh,
+    scene: &assimp::Scene,
+    dir: &str,
+    img_cache: &mut HashMap<String, ImageBuffer<Rgba<u8>, Vec<u8>>>,
+) -> anyhow::Result<mesh::Mesh> {
+    let vertices: Vec<mesh::Vertex> = mesh
         .vertex_iter()
         .enumerate()
         .map(|(i, vertex)| {
@@ -70,22 +90,119 @@ fn process_mesh(mesh: &assimp::Mesh, scene: &assimp::Scene) -> mesh::Mesh {
         })
         .collect();
 
-    let indices = mesh.face_iter().map(|face| {
-        face
-    }).collect();
-
-    let textures;
-    if mesh.material_index >= 0 {
-        textures = mesh.texture_coords_iter(todo!()).map(|vec3d| todo!());
+    let mut indices = Vec::new();
+    for face in mesh.face_iter() {
+        for i in face.indices() {
+            indices.push(*i);
+        }
     }
 
-    mesh::Mesh::new(vertices, indices, textures)
+    let material = scene.material(mesh.material_index as usize).unwrap();
+    let diffuse_maps =
+        load_material_textures(&material, assimp::AiTextureType::Diffuse, dir, img_cache)?;
+    let specular_maps =
+        load_material_textures(&material, assimp::AiTextureType::Specular, dir, img_cache)?;
+    let textures = diffuse_maps.into_iter().chain(specular_maps).collect();
+
+    Ok(mesh::Mesh::new(vertices, indices, textures))
 }
 
 fn load_material_textures(
     mat: &assimp::Material,
-    tex_type: &assimp::Texture,
-    tex_type_name: &str,
-) -> Vec<mesh::Texture> {
-    todo!()
+    tex_type: assimp::AiTextureType,
+    dir: &str,
+    img_cache: &mut HashMap<String, ImageBuffer<Rgba<u8>, Vec<u8>>>,
+) -> anyhow::Result<Vec<mesh::Texture>> {
+    let mut textures = Vec::new();
+
+    for i in 0..mat.texture_count(tex_type) {
+        let path = mat
+            .get_texture(tex_type, i)
+            .expect("texture should be defined");
+        let path = std::path::Path::join(std::path::Path::new(dir), path);
+        println!("path={:#?}", path);
+        let path_str = path.to_str().expect("path should be defined").to_string();
+        let img = img_cache.entry(path_str).or_insert_with(|| {
+            println!("start loading image");
+            let img = image::ImageReader::open(&path)
+                .unwrap()
+                .decode()
+                .unwrap()
+                .into_rgba8();
+            println!("loaded image");
+            img
+        });
+        let texture = mesh::Texture {
+            id: create_texture(img)?,
+            texture_type: match tex_type {
+                assimp::AiTextureType::Diffuse => mesh::TextureType::Diffuse,
+                assimp::AiTextureType::Specular => mesh::TextureType::Specular,
+                _ => anyhow::bail!("unknown texture type"),
+            },
+            path: path.to_str().expect("path should be defined").to_string(),
+        };
+        textures.push(texture);
+    }
+
+    Ok(textures)
+}
+
+fn create_texture(img: &ImageBuffer<Rgba<u8>, Vec<u8>>) -> anyhow::Result<u32> {
+    todo!("identify and fix memory leak likely in this method");
+
+    println!("create texture start");
+    let mut tex: u32 = 0;
+    unsafe { gl::GenTextures(1, &mut tex) };
+    unsafe {
+        gl::BindTexture(gl::TEXTURE_2D, tex);
+    }
+
+    unsafe {
+        gl::TexParameteri(
+            gl::TEXTURE_2D,
+            gl::TEXTURE_WRAP_S,
+            gl::REPEAT.try_into().unwrap(),
+        )
+    };
+    unsafe {
+        gl::TexParameteri(
+            gl::TEXTURE_2D,
+            gl::TEXTURE_WRAP_T,
+            gl::REPEAT.try_into().unwrap(),
+        )
+    };
+    unsafe {
+        gl::TexParameteri(
+            gl::TEXTURE_2D,
+            gl::TEXTURE_MIN_FILTER,
+            gl::LINEAR_MIPMAP_LINEAR.try_into().unwrap(),
+        )
+    };
+    unsafe {
+        gl::TexParameteri(
+            gl::TEXTURE_2D,
+            gl::TEXTURE_MAG_FILTER,
+            gl::LINEAR.try_into().unwrap(),
+        )
+    };
+
+    // TODO determine RGBA vs. RGA dynamically
+    unsafe {
+        gl::TexImage2D(
+            gl::TEXTURE_2D,
+            0,
+            gl::RGBA.try_into().unwrap(),
+            img.width().try_into().unwrap(),
+            img.height().try_into().unwrap(),
+            0,
+            gl::RGBA.try_into().unwrap(),
+            gl::UNSIGNED_BYTE,
+            img.as_raw().as_ptr() as *const _,
+        );
+        gl::GenerateMipmap(gl::TEXTURE_2D);
+    }
+    unsafe { gl::BindTexture(gl::TEXTURE_2D, 0); }
+
+    println!("create texture end");
+    Ok(tex)
 }

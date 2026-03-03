@@ -51,6 +51,9 @@ impl<'a> Node<'a> {
     /// the meshes contained in the `Scene` struct.
     pub fn meshes(&self) -> &[u32] {
         let len = self.num_meshes as usize;
+        if len == 0 {
+            return &[];
+        }
         unsafe { from_raw_parts(self.meshes, len) }
     }
 

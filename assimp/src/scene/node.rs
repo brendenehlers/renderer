@@ -23,7 +23,7 @@ impl<'a> Node<'a> {
     }
 
     /// Return the parent of this node. Returns `None` if this node is the root node.
-    pub fn parent(&self) -> Option<Node<'_>> {
+    pub fn parent(&self) -> Option<Node> {
         if !self.parent.is_null() {
             Some(Node::from_raw(self.parent))
         } else {
@@ -37,7 +37,7 @@ impl<'a> Node<'a> {
     }
 
     /// Returns a vector containing all of the child nodes under this node.
-    pub fn child_iter(&self) -> NodeIter<'_> {
+    pub fn child_iter(&self) -> NodeIter {
         NodeIter::new(self.children as *const *const AiNode,
                       self.num_children as usize)
     }

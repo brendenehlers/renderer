@@ -43,7 +43,7 @@ impl<'a> Scene<'a> {
     }
 
     /// Returns the root node of the scene hierarchy
-    pub fn root_node(&self) -> Node<'_> {
+    pub fn root_node(&self) -> Node {
         Node::from_raw(self.root_node)
     }
 
@@ -53,13 +53,13 @@ impl<'a> Scene<'a> {
     }
 
     /// Returns an iterator over all the meshes in the scene.
-    pub fn mesh_iter(&self) -> MeshIter<'_> {
+    pub fn mesh_iter(&self) -> MeshIter {
         MeshIter::new(self.meshes as *const *const AiMesh,
                       self.num_meshes as usize)
     }
 
     /// Return an individual mesh from the scene.
-    pub fn mesh(&self, id: usize) -> Option<Mesh<'_>> {
+    pub fn mesh(&self, id: usize) -> Option<Mesh> {
         if id < self.num_meshes as usize {
             unsafe { Some(Mesh::from_raw(*(self.meshes.offset(id as isize)))) }
         } else {
@@ -73,7 +73,7 @@ impl<'a> Scene<'a> {
     }
 
     /// Returns an iterator over all the materials in the scene.
-    pub fn material_iter(&self) -> MaterialIter<'_> {
+    pub fn material_iter(&self) -> MaterialIter {
         MaterialIter::new(self.materials as *const *const AiMaterial,
                           self.num_materials as usize)
     }
@@ -84,13 +84,13 @@ impl<'a> Scene<'a> {
     }
 
     /// Returns an iterator over all the animations in the scene.
-    pub fn animation_iter(&self) -> AnimationIter<'_> {
+    pub fn animation_iter(&self) -> AnimationIter {
         AnimationIter::new(self.animations as *const *const AiAnimation,
                            self.num_animations as usize)
     }
 
     /// Return an individual animation from the scene.
-    pub fn animation(&self, id: usize) -> Option<Animation<'_>> {
+    pub fn animation(&self, id: usize) -> Option<Animation> {
         if id < self.num_animations as usize {
             unsafe { Some(Animation::from_raw(*(self.animations.offset(id as isize)))) }
         } else {
@@ -104,7 +104,7 @@ impl<'a> Scene<'a> {
     }
 
     /// Returns an iterator over all the textures in the scene.
-    pub fn texture_iter(&self) -> TextureIter<'_> {
+    pub fn texture_iter(&self) -> TextureIter {
         TextureIter::new(self.textures as *const *const AiTexture,
                          self.num_textures as usize)
     }
@@ -115,7 +115,7 @@ impl<'a> Scene<'a> {
     }
 
     /// Returns an iterator over all the lights in the scene.
-    pub fn light_iter(&self) -> LightIter<'_> {
+    pub fn light_iter(&self) -> LightIter {
         LightIter::new(self.lights as *const *const AiLight,
                        self.num_lights as usize)
     }
@@ -126,7 +126,7 @@ impl<'a> Scene<'a> {
     }
 
     /// Returns an iterator over all the cameras in the scene.
-    pub fn camera_iter(&self) -> CameraIter<'_> {
+    pub fn camera_iter(&self) -> CameraIter {
         CameraIter::new(self.cameras as *const *const AiCamera,
                         self.num_cameras as usize)
     }

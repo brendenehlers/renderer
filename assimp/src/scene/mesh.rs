@@ -37,7 +37,7 @@ impl<'a> Mesh<'a> {
         self.num_vertices
     }
 
-    pub fn vertex_iter(&self) -> Vector3DIter<'_> {
+    pub fn vertex_iter(&self) -> Vector3DIter {
         Vector3DIter::new(self.vertices,
                           self.num_vertices as usize)
     }
@@ -46,7 +46,7 @@ impl<'a> Mesh<'a> {
         self.vertex_data(self.vertices, id)
     }
 
-    pub fn normal_iter(&self) -> Vector3DIter<'_> {
+    pub fn normal_iter(&self) -> Vector3DIter {
         Vector3DIter::new(self.normals,
                           self.num_vertices as usize)
     }
@@ -55,7 +55,7 @@ impl<'a> Mesh<'a> {
         self.vertex_data(self.normals, id)
     }
 
-    pub fn tangent_iter(&self) -> Vector3DIter<'_> {
+    pub fn tangent_iter(&self) -> Vector3DIter {
         Vector3DIter::new(self.tangents,
                           self.num_vertices as usize)
     }
@@ -64,7 +64,7 @@ impl<'a> Mesh<'a> {
         self.vertex_data(self.tangents, id)
     }
 
-    pub fn bitangent_iter(&self) -> Vector3DIter<'_> {
+    pub fn bitangent_iter(&self) -> Vector3DIter {
         Vector3DIter::new(self.bitangents,
                           self.num_vertices as usize)
     }
@@ -73,7 +73,7 @@ impl<'a> Mesh<'a> {
         self.vertex_data(self.bitangents, id)
     }
 
-    pub fn vertex_color_iter(&self, set_id: usize) -> Color4DIter<'_> {
+    pub fn vertex_color_iter(&self, set_id: usize) -> Color4DIter {
         Color4DIter::new(self.colors[set_id],
                          self.num_vertices as usize)
     }
@@ -82,7 +82,7 @@ impl<'a> Mesh<'a> {
         self.color_data(self.colors[set_id], id)
     }
 
-    pub fn texture_coords_iter(&self, channel_id: usize) -> Vector3DIter<'_> {
+    pub fn texture_coords_iter(&self, channel_id: usize) -> Vector3DIter {
         Vector3DIter::new(self.texture_coords[channel_id],
                           self.num_vertices as usize)
     }
@@ -95,12 +95,12 @@ impl<'a> Mesh<'a> {
         self.num_faces
     }
 
-    pub fn face_iter(&self) -> FaceIter<'_> {
+    pub fn face_iter(&self) -> FaceIter {
         FaceIter::new(self.faces,
                       self.num_faces as usize)
     }
 
-    pub fn get_face(&self, id: u32) -> Option<Face<'_>> {
+    pub fn get_face(&self, id: u32) -> Option<Face> {
         if id < self.num_faces {
             unsafe { Some(Face::from_raw(self.faces.offset(id as isize))) }
         } else {
@@ -112,12 +112,12 @@ impl<'a> Mesh<'a> {
         self.num_bones
     }
 
-    pub fn bone_iter(&self) -> BoneIter<'_> {
+    pub fn bone_iter(&self) -> BoneIter {
         BoneIter::new(self.bones as *const *const AiBone,
                       self.num_bones as usize)
     }
 
-    pub fn get_bone(&self, id: u32) -> Option<Bone<'_>> {
+    pub fn get_bone(&self, id: u32) -> Option<Bone> {
         if id < self.num_bones {
             unsafe { Some(Bone::from_raw(*(self.bones.offset(id as isize)))) }
         } else {
@@ -159,12 +159,12 @@ impl<'a> Bone<'a> {
         self.num_weights
     }
 
-    pub fn weight_iter(&self) -> VertexWeightIter<'_> {
+    pub fn weight_iter(&self) -> VertexWeightIter {
         VertexWeightIter::new(self.weights as *const *const AiVertexWeight,
                       self.num_weights as usize)
     }
 
-    pub fn get_weight(&self, id: u32) -> Option<VertexWeight<'_>> {
+    pub fn get_weight(&self, id: u32) -> Option<VertexWeight> {
         if id < self.num_weights {
             unsafe { Some(VertexWeight::from_raw(self.weights.offset(id as isize))) }
         } else {

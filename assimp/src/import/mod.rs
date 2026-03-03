@@ -121,7 +121,7 @@ impl Importer {
     /// # Return value
     /// The new scene, with new post-processing steps applied. Note that it is possible for this
     /// method to fail, in which case the return value is `Err`.
-    pub fn apply_postprocessing<'a>(&'a self, scene: Scene<'a>) -> Result<Scene<'a>, &'a str> {
+    pub fn apply_postprocessing<'a>(&'a self, scene: Scene<'a>) -> Result<Scene, &str> {
         let raw_scene = unsafe { aiApplyPostProcessing(scene.to_raw(), self.flags) };
         if !raw_scene.is_null() {
             // Return original scene, Assimp applies post-processing in-place so returning

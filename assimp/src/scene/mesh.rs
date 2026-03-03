@@ -7,7 +7,7 @@ use super::face::{Face, FaceIter};
 use crate::math::Matrix4x4;
 
 define_type_and_iterator_indirect! {
-    /// Mesh type (incomplete)
+    /// Mesh type
     struct Mesh(&AiMesh)
     /// Mesh iterator type.
     struct MeshIter
@@ -20,7 +20,7 @@ define_type_and_iterator_indirect! {
     struct BoneIter
 }
 
-define_type_and_iterator_indirect! {
+define_type_and_iterator! {
     /// Vertex weight type
     struct VertexWeight(&AiVertexWeight)
     /// Vertex weight iterator type.
@@ -28,6 +28,14 @@ define_type_and_iterator_indirect! {
 }
 
 impl<'a> Mesh<'a> {
+    pub fn name(&self) -> &str {
+        self.name.as_ref()
+    }
+
+    pub fn material_index(&self) -> u32 {
+        self.material_index
+    }
+
     // TODO return as PrimitiveType enum
     pub fn primitive_types(&self) -> u32 {
         self.primitive_types
@@ -35,6 +43,10 @@ impl<'a> Mesh<'a> {
 
     pub fn num_vertices(&self) -> u32 {
         self.num_vertices
+    }
+
+    pub fn num_uv_components(&self, channel_id: usize) -> u32 {
+        self.num_uv_components[channel_id]
     }
 
     pub fn vertex_iter(&self) -> Vector3DIter {
@@ -160,7 +172,7 @@ impl<'a> Bone<'a> {
     }
 
     pub fn weight_iter(&self) -> VertexWeightIter {
-        VertexWeightIter::new(self.weights as *const *const AiVertexWeight,
+        VertexWeightIter::new(self.weights,
                       self.num_weights as usize)
     }
 

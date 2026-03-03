@@ -5,10 +5,20 @@ use std::os::raw::c_uint;
 use ffi::AiFace;
 
 define_type_and_iterator! {
-    /// Face type (not yet implemented)
+    /// Face type
     struct Face(&AiFace)
     /// Face iterator type.
     struct FaceIter
+}
+
+impl<'a> Face<'a> {
+    pub fn num_indices(&self) -> u32 {
+        self.num_indices
+    }
+
+    pub fn indices(&self) -> &[c_uint] {
+        unsafe { std::slice::from_raw_parts(self.indices, self.num_indices as usize) }
+    }
 }
 
 impl<'a> Index<isize> for Face<'a> {

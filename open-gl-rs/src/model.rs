@@ -28,7 +28,7 @@ impl Model {
         let directory = path.split_at(path.rfind('/').unwrap()).0;
 
         let mut meshes: Vec<mesh::Mesh> = vec![];
-        let mut img_cache: HashMap<String, ImageBuffer<Rgba<u8>, Vec<u8>>> = HashMap::new();
+        let mut img_cache: HashMap<String, mesh::Texture> = HashMap::new();
         process_node(
             &scene.root_node(),
             &scene,
@@ -36,7 +36,11 @@ impl Model {
             directory,
             &mut img_cache,
         );
-        todo!()
+
+        Ok(Model {
+            meshes,
+            dir: directory.to_string(),
+        })
     }
 
     pub fn draw(&self, shader: &shader::Shader) -> anyhow::Result<()> {
@@ -49,7 +53,7 @@ fn process_node(
     scene: &assimp::Scene,
     meshes: &mut Vec<mesh::Mesh>,
     dir: &str,
-    img_cache: &mut HashMap<String, ImageBuffer<Rgba<u8>, Vec<u8>>>,
+    img_cache: &mut HashMap<String, mesh::Texture>,
 ) {
     println!("process_node: {:p} name={}", node.to_raw(), node.name());
     node.meshes().iter().for_each(|mesh| {
@@ -65,7 +69,7 @@ fn process_mesh(
     mesh: &assimp::Mesh,
     scene: &assimp::Scene,
     dir: &str,
-    img_cache: &mut HashMap<String, ImageBuffer<Rgba<u8>, Vec<u8>>>,
+    img_cache: &mut HashMap<String, mesh::Texture>,
 ) -> anyhow::Result<mesh::Mesh> {
     let vertices: Vec<mesh::Vertex> = mesh
         .vertex_iter()
@@ -75,7 +79,7 @@ fn process_mesh(
             let normal_vec = mesh.get_normal(i as u32).unwrap();
             let normal = glm::vec3(normal_vec.x, normal_vec.y, normal_vec.z);
 
-            let tex_coords = if mesh.has_texture_coords(i) {
+            let tex_coords = if mesh.has_texture_coords(0) {
                 let tex_coords = mesh.get_texture_coord(0, i as u32).unwrap();
                 glm::vec2(tex_coords.x, tex_coords.y)
             } else {
@@ -111,7 +115,7 @@ fn load_material_textures(
     mat: &assimp::Material,
     tex_type: assimp::AiTextureType,
     dir: &str,
-    img_cache: &mut HashMap<String, ImageBuffer<Rgba<u8>, Vec<u8>>>,
+    img_cache: &mut HashMap<String, mesh::Texture>,
 ) -> anyhow::Result<Vec<mesh::Texture>> {
     let mut textures = Vec::new();
 
@@ -122,7 +126,8 @@ fn load_material_textures(
         let path = std::path::Path::join(std::path::Path::new(dir), path);
         println!("path={:#?}", path);
         let path_str = path.to_str().expect("path should be defined").to_string();
-        let img = img_cache.entry(path_str).or_insert_with(|| {
+
+        let texture = img_cache.entry(path_str).or_insert_with(|| {
             println!("start loading image");
             let img = image::ImageReader::open(&path)
                 .unwrap()
@@ -130,25 +135,26 @@ fn load_material_textures(
                 .unwrap()
                 .into_rgba8();
             println!("loaded image");
-            img
+
+            mesh::Texture {
+                id: create_texture(&img).unwrap(),
+                texture_type: match tex_type {
+                    assimp::AiTextureType::Diffuse => mesh::TextureType::Diffuse,
+                    assimp::AiTextureType::Specular => mesh::TextureType::Specular,
+                    _ => panic!("unknown texture type"),
+                },
+                path: path.to_str().expect("path should be defined").to_string(),
+            }
         });
-        let texture = mesh::Texture {
-            id: create_texture(img)?,
-            texture_type: match tex_type {
-                assimp::AiTextureType::Diffuse => mesh::TextureType::Diffuse,
-                assimp::AiTextureType::Specular => mesh::TextureType::Specular,
-                _ => anyhow::bail!("unknown texture type"),
-            },
-            path: path.to_str().expect("path should be defined").to_string(),
-        };
-        textures.push(texture);
+
+        textures.push(texture.clone());
     }
 
     Ok(textures)
 }
 
 fn create_texture(img: &ImageBuffer<Rgba<u8>, Vec<u8>>) -> anyhow::Result<u32> {
-    todo!("identify and fix memory leak likely in this method");
+    // todo!("identify and fix memory leak likely in this method");
 
     println!("create texture start");
     let mut tex: u32 = 0;
@@ -201,7 +207,9 @@ fn create_texture(img: &ImageBuffer<Rgba<u8>, Vec<u8>>) -> anyhow::Result<u32> {
         );
         gl::GenerateMipmap(gl::TEXTURE_2D);
     }
-    unsafe { gl::BindTexture(gl::TEXTURE_2D, 0); }
+    unsafe {
+        gl::BindTexture(gl::TEXTURE_2D, 0);
+    }
 
     println!("create texture end");
     Ok(tex)

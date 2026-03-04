@@ -43,9 +43,9 @@ impl Shader {
             gl::CompileShader(f_shader);
         }
 
-        unsafe { gl::GetShaderiv(v_shader, gl::COMPILE_STATUS, &mut success) }
+        unsafe { gl::GetShaderiv(f_shader, gl::COMPILE_STATUS, &mut success) }
         if success == gl::FALSE.try_into().unwrap() {
-            unsafe { gl::GetShaderInfoLog(v_shader, 512, ptr::null_mut(), infoLog.as_mut_ptr()) };
+            unsafe { gl::GetShaderInfoLog(f_shader, 512, ptr::null_mut(), infoLog.as_mut_ptr()) };
             let msg: String = infoLog.into_iter()
                 .map(|i| char::from_u32(i as u32).unwrap())
                 .collect();

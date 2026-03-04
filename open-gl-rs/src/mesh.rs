@@ -13,11 +13,13 @@ enum VertexDataType {
     TexCoords,
 }
 
+#[derive(Clone)]
 pub enum TextureType {
     Diffuse,
     Specular,
 }
 
+#[derive(Clone)]
 pub struct Texture {
     pub id: u32,
     pub texture_type: TextureType,
@@ -54,6 +56,7 @@ impl Mesh {
 
         for (i, texture) in self.textures.iter().enumerate() {
             unsafe { gl::ActiveTexture(gl::TEXTURE0 + i as u32) }
+            unsafe { gl::BindTexture(gl::TEXTURE_2D, texture.id) }
             let texture_name = match texture.texture_type {
                 TextureType::Diffuse => {
                     let str = format!("texture_diffuse{}", diffuse_nr);
@@ -67,7 +70,7 @@ impl Mesh {
                 },
             };
 
-            shader.set_int(format!("material.{}", texture_name).as_str(), i as i32)?;
+            shader.set_int(&texture_name, i as i32)?;
         }
         unsafe { gl::ActiveTexture(0) };
 
@@ -95,6 +98,14 @@ fn setup_mesh(mesh: &mut Mesh) {
             gl::ARRAY_BUFFER,
             (mesh.vertices.len() * std::mem::size_of::<Vertex>()) as isize,
             mesh.vertices.as_ptr() as usize as *const _,
+            gl::STATIC_DRAW,
+        );
+
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, mesh.ebo);
+        gl::BufferData(
+            gl::ELEMENT_ARRAY_BUFFER,
+            (mesh.indices.len() * std::mem::size_of::<u32>()) as isize,
+            mesh.indices.as_ptr() as *const _,
             gl::STATIC_DRAW,
         );
 
@@ -140,7 +151,7 @@ fn setup_mesh(mesh: &mut Mesh) {
 
 fn attrib_ptr_data(t: VertexDataType) -> (u32, i32, *const std::os::raw::c_void) {
     match t {
-        VertexDataType::Position => (0, 0, std::mem::offset_of!(Vertex, position) as *const _),
+        VertexDataType::Position => (0, 3, std::mem::offset_of!(Vertex, position) as *const _),
         VertexDataType::Normal => (1, 3, std::mem::offset_of!(Vertex, normal) as *const _),
         VertexDataType::TexCoords => (2, 2, std::mem::offset_of!(Vertex, tex_coords) as *const _),
     }

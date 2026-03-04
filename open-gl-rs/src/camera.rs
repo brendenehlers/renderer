@@ -1,6 +1,5 @@
 use std::ops::DerefMut;
 
-
 pub enum CameraMovement {
     FORWARD,
     BACKWARD,
@@ -14,29 +13,29 @@ pub struct Camera {
     pub camera_up: glm::Vec3,
     pub camera_right: glm::Vec3,
     pub world_up: glm::Vec3,
-    
+
     yaw: f32,
     pitch: f32,
 
     // camera settings
     move_speed: f32,
     mouse_sensitivity: f32,
-    zoom: f32,
+    pub zoom: f32,
 }
 
 impl Camera {
     pub fn new(pos: glm::Vec3, up: glm::Vec3, yaw: f32, pitch: f32) -> Camera {
         let mut camera = Camera {
-            camera_pos: pos, 
+            camera_pos: pos,
             camera_front: glm::vec3(0.0, 0.0, 0.0),
-            camera_up: glm::vec3(0.0, 0.0, 0.0), 
+            camera_up: glm::vec3(0.0, 0.0, 0.0),
             camera_right: glm::vec3(0.0, 0.0, 0.0),
             world_up: up,
             yaw: yaw,
             pitch: pitch,
             move_speed: 2.5,
             mouse_sensitivity: 0.01,
-            zoom: 1.0,
+            zoom: 45.0,
         };
         camera.update_vectors();
         camera
@@ -55,8 +54,14 @@ impl Camera {
         match movement {
             CameraMovement::FORWARD => self.camera_pos += velocity * self.camera_front,
             CameraMovement::BACKWARD => self.camera_pos -= velocity * self.camera_front,
-            CameraMovement::LEFT => self.camera_pos -= glm::normalize(&glm::cross(&self.camera_front, &self.camera_up)) * velocity,
-            CameraMovement::RIGHT => self.camera_pos += glm::normalize(&glm::cross(&self.camera_front, &self.camera_up)) * velocity,
+            CameraMovement::LEFT => {
+                self.camera_pos -=
+                    glm::normalize(&glm::cross(&self.camera_front, &self.camera_up)) * velocity
+            }
+            CameraMovement::RIGHT => {
+                self.camera_pos +=
+                    glm::normalize(&glm::cross(&self.camera_front, &self.camera_up)) * velocity
+            }
         }
     }
 
@@ -93,11 +98,10 @@ impl Camera {
             self.yaw.to_radians().sin() * self.pitch.to_radians().cos(),
         ));
         self.camera_right = glm::normalize(&glm::cross(&self.camera_front, &self.world_up));
-        self.camera_up = glm::normalize(&glm::cross(&self.camera_right, &self.camera_front));   
+        self.camera_up = glm::normalize(&glm::cross(&self.camera_right, &self.camera_front));
     }
-    
+
     fn speed(&self, delta_time: &f32) -> f32 {
         self.move_speed * delta_time
     }
-
 }

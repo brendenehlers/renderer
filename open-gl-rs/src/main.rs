@@ -51,7 +51,7 @@ fn main() -> Result<()> {
         0.0,
     );
 
-    let mut delta_time = 0.0;
+    let mut delta_time;
     let mut last_frame = 0.0;
     let mut first_mouse = false;
     let mut last_x = 0.0;
@@ -64,7 +64,7 @@ fn main() -> Result<()> {
         delta_time = current_frame - last_frame;
         last_frame = current_frame;
 
-        process_keyboard_input(&mut window, &events, &mut camera, &(delta_time as f32));
+        process_keyboard_input(&mut window, &mut camera, &(delta_time as f32));
         process_cursor_pos(
             &window,
             &mut camera,
@@ -102,42 +102,43 @@ fn main() -> Result<()> {
 
 fn process_keyboard_input(
     window: &mut glfw::Window,
-    events: &glfw::GlfwReceiver<(f64, glfw::WindowEvent)>,
     camera: &mut camera::Camera,
     delta_time: &f32,
 ) {
-    for (_, event) in glfw::flush_messages(&events) {
-        println!("{:?}", event);
-        match event {
-            glfw::WindowEvent::Key(glfw::Key::Escape, _, glfw::Action::Press, _) => {
-                window.set_should_close(true)
-            }
-            glfw::WindowEvent::Key(glfw::Key::W, _, glfw::Action::Press, _) => {
-                camera.process_keyboard_input(camera::CameraMovement::FORWARD, delta_time);
-            }
-            glfw::WindowEvent::Key(glfw::Key::A, _, glfw::Action::Press, _) => {
-                camera.process_keyboard_input(camera::CameraMovement::LEFT, delta_time);
-            }
-            glfw::WindowEvent::Key(glfw::Key::S, _, glfw::Action::Press, _) => {
-                camera.process_keyboard_input(camera::CameraMovement::BACKWARD, delta_time);
-            }
-            glfw::WindowEvent::Key(glfw::Key::D, _, glfw::Action::Press, _) => {
-                camera.process_keyboard_input(camera::CameraMovement::RIGHT, delta_time);
-            }
-            glfw::WindowEvent::Key(glfw::Key::W, _, glfw::Action::Repeat, _) => {
-                camera.process_keyboard_input(camera::CameraMovement::FORWARD, delta_time);
-            }
-            glfw::WindowEvent::Key(glfw::Key::A, _, glfw::Action::Repeat, _) => {
-                camera.process_keyboard_input(camera::CameraMovement::LEFT, delta_time);
-            }
-            glfw::WindowEvent::Key(glfw::Key::S, _, glfw::Action::Repeat, _) => {
-                camera.process_keyboard_input(camera::CameraMovement::BACKWARD, delta_time);
-            }
-            glfw::WindowEvent::Key(glfw::Key::D, _, glfw::Action::Repeat, _) => {
-                camera.process_keyboard_input(camera::CameraMovement::RIGHT, delta_time);
-            }
-            _ => {}
+    // escape
+    match window.get_key(glfw::Key::Escape) {
+        glfw::Action::Press | glfw::Action::Repeat => {
+            window.set_should_close(true);
         }
+        _ => {}
+    }
+
+    match window.get_key(glfw::Key::W) {
+        glfw::Action::Press | glfw::Action::Repeat => {
+            camera.process_keyboard_input(camera::CameraMovement::FORWARD, delta_time);
+        }
+        _ => {}
+    }
+
+    match window.get_key(glfw::Key::A) {
+        glfw::Action::Press | glfw::Action::Repeat => {
+            camera.process_keyboard_input(camera::CameraMovement::LEFT, delta_time);
+        }
+        _ => {}
+    }
+
+    match window.get_key(glfw::Key::S) {
+        glfw::Action::Press | glfw::Action::Repeat => {
+            camera.process_keyboard_input(camera::CameraMovement::BACKWARD, delta_time);
+        }
+        _ => {}
+    }
+
+    match window.get_key(glfw::Key::D) {
+        glfw::Action::Press | glfw::Action::Repeat => {
+            camera.process_keyboard_input(camera::CameraMovement::RIGHT, delta_time);
+        }
+        _ => {}
     }
 }
 

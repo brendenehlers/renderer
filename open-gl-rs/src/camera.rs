@@ -1,8 +1,10 @@
 pub enum CameraMovement {
-    FORWARD,
-    BACKWARD,
-    LEFT,
-    RIGHT,
+    Forward,
+    Backward,
+    Left,
+    Right,
+    Up,
+    Down,
 }
 
 pub struct Camera {
@@ -50,15 +52,21 @@ impl Camera {
     pub fn process_keyboard_input(&mut self, movement: CameraMovement, delta_time: &f32) {
         let velocity = self.speed(delta_time);
         match movement {
-            CameraMovement::FORWARD => self.camera_pos += velocity * self.camera_front,
-            CameraMovement::BACKWARD => self.camera_pos -= velocity * self.camera_front,
-            CameraMovement::LEFT => {
+            CameraMovement::Forward => self.camera_pos += velocity * self.camera_front,
+            CameraMovement::Backward => self.camera_pos -= velocity * self.camera_front,
+            CameraMovement::Left => {
                 self.camera_pos -=
                     glm::normalize(&glm::cross(&self.camera_front, &self.camera_up)) * velocity
             }
-            CameraMovement::RIGHT => {
+            CameraMovement::Right => {
                 self.camera_pos +=
                     glm::normalize(&glm::cross(&self.camera_front, &self.camera_up)) * velocity
+            }
+            CameraMovement::Up => {
+                self.camera_pos += glm::normalize(&self.camera_up) * velocity;
+            }
+            CameraMovement::Down => {
+                self.camera_pos -= glm::normalize(&self.camera_up) * velocity;
             }
         }
     }

@@ -92,6 +92,21 @@ impl Shader {
         Ok(())
     }
 
+    pub fn set_float(&self, name: &str, value: f32) -> Result<()> {
+        unsafe {
+            gl::Uniform1f(self.get_uniform_loc(name)?, value);
+        }
+        Ok(())
+    }
+
+    pub fn set_vec3(&self, name: &str, vec: &glm::Vec3) -> Result<()> {
+        unsafe {
+            let loc = self.get_uniform_loc(name)?;
+            gl::Uniform3f(loc, vec[0], vec[1], vec[2]);
+        }
+        Ok(())
+    }
+
     pub fn set_mat4(&self, name: &str, mat: glm::Mat4) -> Result<()> {
         unsafe {
             let loc = self.get_uniform_loc(name)?;

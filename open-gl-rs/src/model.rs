@@ -10,10 +10,6 @@ pub struct Model {
 
 impl Model {
     pub fn load(importer: &assimp::Importer, path: &str) -> anyhow::Result<Model> {
-        // let mut importer = assimp::Importer::new();
-        // importer.triangulate(true);
-        // importer.flip_uvs(true);
-
         let scene = match importer.read_file(path) {
             Ok(scene) => scene,
             Err(s) => {

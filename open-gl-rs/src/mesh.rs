@@ -58,12 +58,12 @@ impl Mesh {
             unsafe { gl::BindTexture(gl::TEXTURE_2D, texture.id) }
             let texture_name = match texture.texture_type {
                 TextureType::Diffuse => {
-                    let str = format!("texture_diffuse{}", diffuse_nr);
+                    let str = format!("material.texture_diffuse{}", diffuse_nr);
                     diffuse_nr += 1;
                     str
                 }
                 TextureType::Specular => {
-                    let str = format!("texture_specular{}", specular_nr);
+                    let str = format!("material.texture_specular{}", specular_nr);
                     specular_nr += 1;
                     str
                 }
@@ -72,6 +72,9 @@ impl Mesh {
             shader.set_int(&texture_name, i as i32)?;
         }
         unsafe { gl::ActiveTexture(0) };
+
+        // todo find out how to determine this value
+        shader.set_float("material.shininess", 32.0)?;
 
         // draw mesh
         unsafe {

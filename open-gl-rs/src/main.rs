@@ -108,6 +108,21 @@ fn main() -> Result<()> {
         }
 
         shader.use_shader();
+        shader.set_vec3("viewPos", &camera.camera_pos)?;
+
+        // dir light
+        shader.set_vec3("dirLight.direction", &glm::vec3(-0.2, -1.0, -0.3))?;
+        shader.set_vec3("dirLight.ambient", &glm::vec3(0.05, 0.05, 0.05))?;
+        shader.set_vec3("dirLight.diffuse", &glm::vec3(0.4, 0.4, 0.4))?;
+        shader.set_vec3("dirLight.specular", &glm::vec3(0.5, 0.5, 0.5))?;
+
+        shader.set_vec3("pointLights[0].position", &glm::vec3(0.7, 0.2, 2.0))?;
+        shader.set_vec3("pointLights[0].ambient", &glm::vec3(0.05, 0.05, 0.05))?;
+        shader.set_vec3("pointLights[0].diffuse", &glm::vec3(0.8, 0.8, 0.8))?;
+        shader.set_vec3("pointLights[0].specular", &glm::vec3(1.0, 1.0, 1.0))?;
+        shader.set_float("pointLights[0].constant", 1.0)?;
+        shader.set_float("pointLights[0].linear", 0.09)?;
+        shader.set_float("pointLights[0].quadratic", 0.032)?;
 
         let projection = glm::perspective(800.0 / 600.0, camera.zoom.to_radians(), 0.1, 100.0);
         let view = camera.view_matrix();
@@ -146,28 +161,42 @@ fn process_keyboard_input(
 
     match window.get_key(glfw::Key::W) {
         glfw::Action::Press | glfw::Action::Repeat => {
-            camera.process_keyboard_input(camera::CameraMovement::FORWARD, delta_time);
+            camera.process_keyboard_input(camera::CameraMovement::Forward, delta_time);
         }
         _ => {}
     }
 
     match window.get_key(glfw::Key::A) {
         glfw::Action::Press | glfw::Action::Repeat => {
-            camera.process_keyboard_input(camera::CameraMovement::LEFT, delta_time);
+            camera.process_keyboard_input(camera::CameraMovement::Left, delta_time);
         }
         _ => {}
     }
 
     match window.get_key(glfw::Key::S) {
         glfw::Action::Press | glfw::Action::Repeat => {
-            camera.process_keyboard_input(camera::CameraMovement::BACKWARD, delta_time);
+            camera.process_keyboard_input(camera::CameraMovement::Backward, delta_time);
         }
         _ => {}
     }
 
     match window.get_key(glfw::Key::D) {
         glfw::Action::Press | glfw::Action::Repeat => {
-            camera.process_keyboard_input(camera::CameraMovement::RIGHT, delta_time);
+            camera.process_keyboard_input(camera::CameraMovement::Right, delta_time);
+        }
+        _ => {}
+    }
+
+    match window.get_key(glfw::Key::Space) {
+        glfw::Action::Press | glfw::Action::Repeat => {
+            camera.process_keyboard_input(camera::CameraMovement::Up, delta_time);
+        }
+        _ => {}
+    }
+
+    match window.get_key(glfw::Key::LeftControl) {
+        glfw::Action::Press | glfw::Action::Repeat => {
+            camera.process_keyboard_input(camera::CameraMovement::Down, delta_time);
         }
         _ => {}
     }

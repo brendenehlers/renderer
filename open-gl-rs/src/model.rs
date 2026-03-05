@@ -6,7 +6,6 @@ use crate::{mesh, shader};
 
 pub struct Model {
     meshes: Vec<mesh::Mesh>,
-    dir: String,
 }
 
 impl Model {
@@ -37,10 +36,7 @@ impl Model {
             &mut img_cache,
         );
 
-        Ok(Model {
-            meshes,
-            dir: directory.to_string(),
-        })
+        Ok(Model { meshes })
     }
 
     pub fn draw(&self, shader: &shader::Shader) -> anyhow::Result<()> {
@@ -143,7 +139,6 @@ fn load_material_textures(
                     assimp::AiTextureType::Specular => mesh::TextureType::Specular,
                     _ => panic!("unknown texture type"),
                 },
-                path: path.to_str().expect("path should be defined").to_string(),
             }
         });
 

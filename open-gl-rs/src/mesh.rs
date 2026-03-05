@@ -23,7 +23,6 @@ pub enum TextureType {
 pub struct Texture {
     pub id: u32,
     pub texture_type: TextureType,
-    pub path: String,
 }
 
 pub struct Mesh {
@@ -62,12 +61,12 @@ impl Mesh {
                     let str = format!("texture_diffuse{}", diffuse_nr);
                     diffuse_nr += 1;
                     str
-                },
+                }
                 TextureType::Specular => {
                     let str = format!("texture_specular{}", specular_nr);
                     specular_nr += 1;
                     str
-                },
+                }
             };
 
             shader.set_int(&texture_name, i as i32)?;
@@ -77,7 +76,12 @@ impl Mesh {
         // draw mesh
         unsafe {
             gl::BindVertexArray(self.vao);
-            gl::DrawElements(gl::TRIANGLES, self.indices.len().try_into().unwrap(), gl::UNSIGNED_INT, 0 as *const _);
+            gl::DrawElements(
+                gl::TRIANGLES,
+                self.indices.len().try_into().unwrap(),
+                gl::UNSIGNED_INT,
+                0 as *const _,
+            );
             gl::BindVertexArray(0);
         }
 

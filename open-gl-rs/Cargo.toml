@@ -9,4 +9,5 @@ assimp = {path = "../assimp"}
 gl = "0.14.0"
 glfw = "0.61.0"
 image = "0.25.9"
+imgui = "0.12.0"
 nalgebra-glm = "0.20.0"

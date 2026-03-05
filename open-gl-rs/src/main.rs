@@ -24,7 +24,7 @@ fn main() -> Result<()> {
         glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
     }
 
-    let (mut window, events) = glfw
+    let (mut window, _) = glfw
         .create_window(800, 600, "Hello LearnOpenGL", glfw::WindowMode::Windowed)
         .expect("failed to create window");
     window.make_current();

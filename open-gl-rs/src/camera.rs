@@ -1,5 +1,3 @@
-use std::ops::DerefMut;
-
 pub enum CameraMovement {
     FORWARD,
     BACKWARD,

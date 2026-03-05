@@ -6,6 +6,7 @@ use anyhow::Result;
 use glfw::{Context, ffi::glfwGetTime};
 
 mod camera;
+mod imgui_glfw;
 mod mesh;
 mod model;
 mod shader;
@@ -24,11 +25,16 @@ fn main() -> Result<()> {
         glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
     }
 
-    let (mut window, _) = glfw
+    let (mut window, events) = glfw
         .create_window(800, 600, "Hello LearnOpenGL", glfw::WindowMode::Windowed)
         .expect("failed to create window");
     window.make_current();
     window.set_key_polling(true);
+    window.set_char_polling(true);
+    window.set_mouse_button_polling(true);
+    window.set_cursor_pos_polling(true);
+    window.set_scroll_polling(true);
+    window.set_framebuffer_size_polling(true);
     window.set_cursor_mode(glfw::CursorMode::Disabled);
 
     gl::load_with(|s| {
@@ -37,6 +43,8 @@ fn main() -> Result<()> {
             .map_or(std::ptr::null(), |f| f as *const _)
     });
     unsafe { gl::Enable(gl::DEPTH_TEST) };
+
+    let mut imgui_glfw = imgui_glfw::ImguiGlfw::new(&mut window);
 
     let shader = shader::Shader::new("src/shaders/model_vs.glsl", "src/shaders/model_fs.glsl")?;
 
@@ -56,23 +64,42 @@ fn main() -> Result<()> {
     let mut first_mouse = false;
     let mut last_x = 0.0;
     let mut last_y = 0.0;
+    let mut ui_mode = false;
 
-    println!("Starting render engine");
+    println!("Starting render engine (Tab to toggle UI mode)");
     while !window.should_close() {
-        // frame data processing
         let current_frame = unsafe { glfwGetTime() };
         delta_time = current_frame - last_frame;
         last_frame = current_frame;
 
-        process_keyboard_input(&mut window, &mut camera, &(delta_time as f32));
-        process_cursor_pos(
-            &window,
-            &mut camera,
-            &mut first_mouse,
-            &mut last_x,
-            &mut last_y,
-        );
-        // todo process scroll, process window resize
+        glfw.poll_events();
+        for (_, event) in glfw::flush_messages(&events) {
+            // Toggle between camera mode and UI mode with Tab
+            if let glfw::WindowEvent::Key(glfw::Key::Tab, _, glfw::Action::Press, _) = event {
+                ui_mode = !ui_mode;
+                if ui_mode {
+                    window.set_cursor_mode(glfw::CursorMode::Normal);
+                } else {
+                    window.set_cursor_mode(glfw::CursorMode::Disabled);
+                    first_mouse = false;
+                }
+            }
+
+            if ui_mode {
+                imgui_glfw.handle_event(&event);
+            }
+        }
+
+        if !ui_mode {
+            process_keyboard_input(&mut window, &mut camera, &(delta_time as f32));
+            process_cursor_pos(
+                &window,
+                &mut camera,
+                &mut first_mouse,
+                &mut last_x,
+                &mut last_y,
+            );
+        }
 
         // rendering
         unsafe {
@@ -93,8 +120,13 @@ fn main() -> Result<()> {
         shader.set_mat4("model", model_mat)?;
         model.draw(&shader)?;
 
+        {
+            let ui = imgui_glfw.new_frame(&mut window);
+            render_ui(ui);
+        }
+        imgui_glfw.render();
+
         window.swap_buffers();
-        glfw.poll_events();
     }
 
     Ok(())
@@ -105,7 +137,6 @@ fn process_keyboard_input(
     camera: &mut camera::Camera,
     delta_time: &f32,
 ) {
-    // escape
     match window.get_key(glfw::Key::Escape) {
         glfw::Action::Press | glfw::Action::Repeat => {
             window.set_should_close(true);
@@ -163,4 +194,20 @@ fn process_cursor_pos(
     *last_y = y_pos;
 
     camera.process_mouse_movement(&x_off, &y_off);
+}
+
+fn render_ui(ui: &mut imgui::Ui) {
+    ui.window("Hello world")
+        .size([300.0, 100.0], imgui::Condition::FirstUseEver)
+        .build(|| {
+            ui.text("Hello world!");
+            ui.text("こんにちは世界！");
+            ui.text("This...is...imgui-rs!");
+            ui.separator();
+            let mouse_pos = ui.io().mouse_pos;
+            ui.text(format!(
+                "Mouse Position: ({:.1},{:.1})",
+                mouse_pos[0], mouse_pos[1]
+            ));
+        });
 }

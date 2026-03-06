@@ -1,5 +1,7 @@
 use std::time::Instant;
 
+use tracing::{debug, info};
+
 use glfw::{Action, Cursor, Key as GlfwKey, Modifiers, StandardCursor, Window, WindowEvent};
 use imgui::{Key as ImGuiKey, MouseCursor};
 use imgui_glow_renderer::AutoRenderer;
@@ -13,6 +15,7 @@ pub struct ImguiGlfw {
 
 impl ImguiGlfw {
     pub fn new(window: &mut Window) -> Self {
+        debug!("initializing ImGui context");
         let mut imgui = imgui::Context::create();
         imgui.set_ini_filename(None);
 
@@ -37,6 +40,7 @@ impl ImguiGlfw {
 
         let renderer =
             AutoRenderer::new(gl_context, &mut imgui).expect("failed to create imgui renderer");
+        info!("ImGui renderer initialized");
 
         Self {
             imgui,

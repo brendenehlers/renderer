@@ -1,3 +1,5 @@
+use tracing::debug;
+
 use crate::{glm, shader};
 
 #[repr(C)]
@@ -36,6 +38,13 @@ pub struct Mesh {
 
 impl Mesh {
     pub fn new(vertices: Vec<Vertex>, indices: Vec<u32>, textures: Vec<Texture>) -> Mesh {
+        let _span = tracing::debug_span!(
+            "mesh_setup",
+            vertex_count = vertices.len(),
+            index_count = indices.len(),
+            texture_count = textures.len()
+        )
+        .entered();
         let mut mesh = Mesh {
             vertices,
             indices,
@@ -46,6 +55,7 @@ impl Mesh {
         };
 
         setup_mesh(&mut mesh);
+        debug!(vao = mesh.vao, vbo = mesh.vbo, ebo = mesh.ebo, "GPU buffers allocated");
         mesh
     }
 

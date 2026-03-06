@@ -2,17 +2,20 @@ use anyhow::{Ok, Result};
 use gl;
 use std::ffi::CString;
 use std::ptr;
+use tracing::{debug, error, info, instrument};
 
 pub struct Shader {
     pub id: u32,
 }
 
 impl Shader {
+    #[instrument(fields(vertex_path = %vertex_path, fragment_path = %fragment_path))]
     pub fn new(vertex_path: &str, fragment_path: &str) -> Result<Shader> {
         let mut success: i32 = 1;
         let mut info_log: [i8; 512] = [32; 512]; // init with spaces
 
         // read and compile vertex shader
+        debug!("compiling vertex shader");
         let v_shader_code = CString::new(std::fs::read_to_string(vertex_path)?)?;
         let v_shader: u32;
         v_shader = unsafe { gl::CreateShader(gl::VERTEX_SHADER) };
@@ -28,10 +31,13 @@ impl Shader {
                 .into_iter()
                 .map(|i| char::from_u32(i as u32).unwrap())
                 .collect();
+            error!(log = msg.trim(), "vertex shader compilation failed");
             anyhow::bail!("ERROR::SHADER::VERTEX::COMPILATION::FAILED\n{}", msg.trim());
         }
+        debug!("vertex shader compiled successfully");
 
         // read and compile fragment shader
+        debug!("compiling fragment shader");
         let f_shader_code = CString::new(std::fs::read_to_string(fragment_path)?)?;
         let f_shader: u32;
         f_shader = unsafe { gl::CreateShader(gl::FRAGMENT_SHADER) };
@@ -47,11 +53,13 @@ impl Shader {
                 .into_iter()
                 .map(|i| char::from_u32(i as u32).unwrap())
                 .collect();
+            error!(log = msg.trim(), "fragment shader compilation failed");
             anyhow::bail!(
                 "ERROR::SHADER::FRAGMENT::COMPILATION::FAILED\n{}",
                 msg.trim()
             );
         }
+        debug!("fragment shader compiled successfully");
 
         // create program and link shaders
         let id: u32;
@@ -69,6 +77,7 @@ impl Shader {
                 .into_iter()
                 .map(|i| char::from_u32(i as u32).unwrap())
                 .collect();
+            error!(log = msg.trim(), "shader program linking failed");
             anyhow::bail!("ERROR::SHADER::PROGRAM::LINKING_FAILED\n{}", msg.trim());
         }
 
@@ -78,6 +87,7 @@ impl Shader {
             gl::DeleteShader(f_shader);
         }
 
+        info!(program_id = id, "shader program linked successfully");
         Ok(Shader { id })
     }
 

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use image::{ImageBuffer, Rgba};
+use tracing::{debug, error, info, instrument};
 
 use crate::{mesh, shader};
 
@@ -9,15 +10,19 @@ pub struct Model {
 }
 
 impl Model {
+    #[instrument(skip(importer), fields(path = %path))]
     pub fn load(importer: &assimp::Importer, path: &str) -> anyhow::Result<Model> {
+        debug!("beginning model load");
         let scene = match importer.read_file(path) {
             Ok(scene) => scene,
             Err(s) => {
+                error!(error = %s, "assimp failed to read file");
                 anyhow::bail!(String::from(s))
             }
         };
 
         if scene.is_incomplete() {
+            error!("assimp scene is incomplete");
             anyhow::bail!("failed to load scene");
         }
         let directory = path.split_at(path.rfind('/').unwrap()).0;
@@ -32,6 +37,7 @@ impl Model {
             &mut img_cache,
         );
 
+        info!(mesh_count = meshes.len(), "model loaded successfully");
         Ok(Model { meshes })
     }
 
@@ -47,7 +53,13 @@ fn process_node(
     dir: &str,
     img_cache: &mut HashMap<String, mesh::Texture>,
 ) {
-    println!("process_node: {:p} name={}", node.to_raw(), node.name());
+    let _span = tracing::debug_span!(
+        "process_node",
+        name = %node.name(),
+        mesh_count = node.meshes().len()
+    )
+    .entered();
+    debug!(name = %node.name(), ptr = ?node.to_raw(), "processing scene node");
     node.meshes().iter().for_each(|mesh| {
         let mesh = scene.mesh(*mesh as usize).unwrap();
         meshes.push(process_mesh(&mesh, &scene, dir, img_cache).unwrap());
@@ -63,6 +75,13 @@ fn process_mesh(
     dir: &str,
     img_cache: &mut HashMap<String, mesh::Texture>,
 ) -> anyhow::Result<mesh::Mesh> {
+    let _span = tracing::debug_span!(
+        "process_mesh",
+        name = %mesh.name(),
+        vertex_count = mesh.num_vertices(),
+        face_count = mesh.num_faces()
+    )
+    .entered();
     let vertices: Vec<mesh::Vertex> = mesh
         .vertex_iter()
         .enumerate()
@@ -100,6 +119,11 @@ fn process_mesh(
         load_material_textures(&material, assimp::AiTextureType::Specular, dir, img_cache)?;
     let textures = diffuse_maps.into_iter().chain(specular_maps).collect();
 
+    debug!(
+        vertices = vertices.len(),
+        indices = indices.len(),
+        "mesh processed"
+    );
     Ok(mesh::Mesh::new(vertices, indices, textures))
 }
 
@@ -116,17 +140,17 @@ fn load_material_textures(
             .get_texture(tex_type, i)
             .expect("texture should be defined");
         let path = std::path::Path::join(std::path::Path::new(dir), path);
-        println!("path={:#?}", path);
+        debug!(path = ?path, "resolved texture path");
         let path_str = path.to_str().expect("path should be defined").to_string();
 
-        let texture = img_cache.entry(path_str).or_insert_with(|| {
-            println!("start loading image");
+        let texture = img_cache.entry(path_str.clone()).or_insert_with(|| {
+            debug!(path = %path_str, "cache miss - loading image from disk");
             let img = image::ImageReader::open(&path)
                 .unwrap()
                 .decode()
                 .unwrap()
                 .into_rgba8();
-            println!("loaded image");
+            debug!(path = %path_str, width = img.width(), height = img.height(), "image decoded");
 
             mesh::Texture {
                 id: create_texture(&img).unwrap(),
@@ -147,7 +171,13 @@ fn load_material_textures(
 fn create_texture(img: &ImageBuffer<Rgba<u8>, Vec<u8>>) -> anyhow::Result<u32> {
     // todo!("identify and fix memory leak likely in this method");
 
-    println!("create texture start");
+    let _span = tracing::debug_span!(
+        "create_texture",
+        width = img.width(),
+        height = img.height()
+    )
+    .entered();
+    debug!(width = img.width(), height = img.height(), "uploading texture to GPU");
     let mut tex: u32 = 0;
     unsafe { gl::GenTextures(1, &mut tex) };
     unsafe {
@@ -202,6 +232,6 @@ fn create_texture(img: &ImageBuffer<Rgba<u8>, Vec<u8>>) -> anyhow::Result<u32> {
         gl::BindTexture(gl::TEXTURE_2D, 0);
     }
 
-    println!("create texture end");
+    debug!(tex_id = tex, "texture GPU upload complete");
     Ok(tex)
 }

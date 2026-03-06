@@ -13,3 +13,5 @@ image = "0.25.9"
 imgui = "0.12.0"
 imgui-glow-renderer = "0.13.0"
 nalgebra-glm = "0.20.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }

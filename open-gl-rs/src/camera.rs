@@ -1,3 +1,5 @@
+use tracing::debug;
+
 pub enum CameraMovement {
     Forward,
     Backward,
@@ -38,6 +40,11 @@ impl Camera {
             zoom: 45.0,
         };
         camera.update_vectors();
+        debug!(
+            pos_x = pos.x, pos_y = pos.y, pos_z = pos.z,
+            yaw, pitch,
+            "camera initialized"
+        );
         camera
     }
 

@@ -4,6 +4,7 @@ extern crate nalgebra_glm as glm;
 
 use anyhow::Result;
 use glfw::{Context, ffi::glfwGetTime};
+use tracing::{info, info_span, trace};
 
 mod camera;
 mod imgui_glfw;
@@ -12,6 +13,19 @@ mod model;
 mod shader;
 
 fn main() -> Result<()> {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+        )
+        .with_target(true)
+        .with_thread_ids(false)
+        .with_file(false)
+        .with_line_number(false)
+        .init();
+
+    let _startup_span = info_span!("startup").entered();
+
     use glfw::fail_on_errors;
 
     let mut glfw = glfw::init(fail_on_errors!())?;
@@ -72,17 +86,32 @@ fn main() -> Result<()> {
         b: 255,
     };
 
-    println!("Starting render engine (Tab to toggle UI mode)");
+    info!(
+        model_path = "src/models/backpack/backpack.obj",
+        vertex_shader = "src/shaders/model_vs.glsl",
+        fragment_shader = "src/shaders/model_fs.glsl",
+        "renderer initialization complete"
+    );
+    drop(_startup_span);
+
+    info!("starting render engine (Space to toggle UI mode)");
+    let mut frame_count: u64 = 0;
     while !window.should_close() {
+        frame_count += 1;
+        let _frame_span = tracing::trace_span!("frame", frame = frame_count).entered();
+
         let current_frame = unsafe { glfwGetTime() };
         delta_time = current_frame - last_frame;
         last_frame = current_frame;
 
+        trace!(delta_ms = delta_time * 1000.0, "frame begin");
+
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
-            // Toggle between camera mode and UI mode with Tab
+            // Toggle between camera mode and UI mode with Space
             if let glfw::WindowEvent::Key(glfw::Key::Space, _, glfw::Action::Press, _) = event {
                 ui_mode = !ui_mode;
+                info!(ui_mode, "toggled UI mode");
                 if ui_mode {
                     window.set_cursor_mode(glfw::CursorMode::Normal);
                 } else {
@@ -165,14 +194,19 @@ fn main() -> Result<()> {
         model_mat = glm::translate(&model_mat, &glm::vec3(0.0, 0.0, 0.0));
         model_mat = glm::scale(&model_mat, &glm::vec3(1.0, 1.0, 1.0));
         shader.set_mat4("model", model_mat)?;
-        model.draw(&shader)?;
+        {
+            let _draw_span = tracing::trace_span!("scene_draw").entered();
+            model.draw(&shader)?;
+        }
 
         {
+            let _imgui_span = tracing::trace_span!("imgui").entered();
             let ui = imgui_glfw.new_frame(&mut window);
             render_ui(ui, &mut light_color);
+            imgui_glfw.render();
         }
-        imgui_glfw.render();
 
+        trace!("frame end");
         window.swap_buffers();
     }
 

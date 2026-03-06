@@ -116,6 +116,7 @@ fn main() -> Result<()> {
         shader.set_vec3("dirLight.diffuse", &glm::vec3(0.4, 0.4, 0.4))?;
         shader.set_vec3("dirLight.specular", &glm::vec3(0.5, 0.5, 0.5))?;
 
+        shader.set_int("numPointLights", 1)?;
         shader.set_vec3("pointLights[0].position", &glm::vec3(0.7, 0.2, 2.0))?;
         shader.set_vec3("pointLights[0].ambient", &glm::vec3(0.05, 0.05, 0.05))?;
         shader.set_vec3("pointLights[0].diffuse", &glm::vec3(0.8, 0.8, 0.8))?;

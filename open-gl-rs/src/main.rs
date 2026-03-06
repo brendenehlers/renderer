@@ -66,6 +66,12 @@ fn main() -> Result<()> {
     let mut last_y = 0.0;
     let mut ui_mode = false;
 
+    let mut light_color = LightColor {
+        r: 255,
+        g: 255,
+        b: 255,
+    };
+
     println!("Starting render engine (Tab to toggle UI mode)");
     while !window.should_close() {
         let current_frame = unsafe { glfwGetTime() };
@@ -75,7 +81,7 @@ fn main() -> Result<()> {
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
             // Toggle between camera mode and UI mode with Tab
-            if let glfw::WindowEvent::Key(glfw::Key::Tab, _, glfw::Action::Press, _) = event {
+            if let glfw::WindowEvent::Key(glfw::Key::Space, _, glfw::Action::Press, _) = event {
                 ui_mode = !ui_mode;
                 if ui_mode {
                     window.set_cursor_mode(glfw::CursorMode::Normal);
@@ -85,13 +91,17 @@ fn main() -> Result<()> {
                 }
             }
 
+            if let glfw::WindowEvent::Key(glfw::Key::Escape, _, glfw::Action::Press, _) = event {
+                window.set_should_close(true);
+            }
+
             if ui_mode {
                 imgui_glfw.handle_event(&event);
             }
         }
 
         if !ui_mode {
-            process_keyboard_input(&mut window, &mut camera, &(delta_time as f32));
+            process_movement(&mut window, &mut camera, &(delta_time as f32));
             process_cursor_pos(
                 &window,
                 &mut camera,
@@ -118,9 +128,30 @@ fn main() -> Result<()> {
 
         shader.set_int("numPointLights", 1)?;
         shader.set_vec3("pointLights[0].position", &glm::vec3(0.7, 0.2, 2.0))?;
-        shader.set_vec3("pointLights[0].ambient", &glm::vec3(0.05, 0.05, 0.05))?;
-        shader.set_vec3("pointLights[0].diffuse", &glm::vec3(0.8, 0.8, 0.8))?;
-        shader.set_vec3("pointLights[0].specular", &glm::vec3(1.0, 1.0, 1.0))?;
+        shader.set_vec3(
+            "pointLights[0].ambient",
+            &glm::vec3(
+                0.05 * light_color.red_norm(),
+                0.05 * light_color.green_norm(),
+                0.05 * light_color.blue_norm(),
+            ),
+        )?;
+        shader.set_vec3(
+            "pointLights[0].diffuse",
+            &glm::vec3(
+                0.8 * light_color.red_norm(),
+                0.8 * light_color.green_norm(),
+                0.8 * light_color.blue_norm(),
+            ),
+        )?;
+        shader.set_vec3(
+            "pointLights[0].specular",
+            &glm::vec3(
+                1.0 * light_color.red_norm(),
+                1.0 * light_color.green_norm(),
+                1.0 * light_color.blue_norm(),
+            ),
+        )?;
         shader.set_float("pointLights[0].constant", 1.0)?;
         shader.set_float("pointLights[0].linear", 0.09)?;
         shader.set_float("pointLights[0].quadratic", 0.032)?;
@@ -138,7 +169,7 @@ fn main() -> Result<()> {
 
         {
             let ui = imgui_glfw.new_frame(&mut window);
-            render_ui(ui);
+            render_ui(ui, &mut light_color);
         }
         imgui_glfw.render();
 
@@ -148,18 +179,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn process_keyboard_input(
-    window: &mut glfw::Window,
-    camera: &mut camera::Camera,
-    delta_time: &f32,
-) {
-    match window.get_key(glfw::Key::Escape) {
-        glfw::Action::Press | glfw::Action::Repeat => {
-            window.set_should_close(true);
-        }
-        _ => {}
-    }
-
+fn process_movement(window: &mut glfw::Window, camera: &mut camera::Camera, delta_time: &f32) {
     match window.get_key(glfw::Key::W) {
         glfw::Action::Press | glfw::Action::Repeat => {
             camera.process_keyboard_input(camera::CameraMovement::Forward, delta_time);
@@ -226,18 +246,36 @@ fn process_cursor_pos(
     camera.process_mouse_movement(&x_off, &y_off);
 }
 
-fn render_ui(ui: &mut imgui::Ui) {
-    ui.window("Hello world")
+struct LightColor {
+    r: i32,
+    g: i32,
+    b: i32,
+}
+
+impl LightColor {
+    fn red_norm(&self) -> f32 {
+        self.norm(self.r)
+    }
+
+    fn green_norm(&self) -> f32 {
+        self.norm(self.g)
+    }
+
+    fn blue_norm(&self) -> f32 {
+        self.norm(self.b)
+    }
+
+    fn norm(&self, v: i32) -> f32 {
+        v as f32 / 255.0
+    }
+}
+
+fn render_ui(ui: &mut imgui::Ui, light: &mut LightColor) {
+    ui.window("config")
         .size([300.0, 100.0], imgui::Condition::FirstUseEver)
         .build(|| {
-            ui.text("Hello world!");
-            ui.text("こんにちは世界！");
-            ui.text("This...is...imgui-rs!");
-            ui.separator();
-            let mouse_pos = ui.io().mouse_pos;
-            ui.text(format!(
-                "Mouse Position: ({:.1},{:.1})",
-                mouse_pos[0], mouse_pos[1]
-            ));
+            ui.slider("red", 0, 255, &mut light.r);
+            ui.slider("green", 0, 255, &mut light.g);
+            ui.slider("blue", 0, 255, &mut light.b);
         });
 }

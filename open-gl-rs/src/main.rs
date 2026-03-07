@@ -13,17 +13,35 @@ mod model;
 mod shader;
 
 fn main() -> Result<()> {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
-        )
+    use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
+
+    let env_filter = tracing_subscriber::EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"));
+
+    let fmt_layer = tracing_subscriber::fmt::layer()
         .with_target(true)
         .with_thread_ids(false)
         .with_file(false)
-        .with_line_number(false)
+        .with_line_number(false);
+
+    #[cfg(feature = "tracy")]
+    tracing_subscriber::registry()
+        .with(env_filter)
+        .with(fmt_layer)
+        .with(tracing_tracy::TracyLayer::default().with_filter(
+            tracing_subscriber::filter::filter_fn(|meta| {
+                meta.target().starts_with("new_open_gl_rs")
+            }),
+        ))
         .init();
 
+    #[cfg(not(feature = "tracy"))]
+    tracing_subscriber::registry()
+        .with(env_filter)
+        .with(fmt_layer)
+        .init();
+
+    let _app_span = info_span!("app").entered();
     let _startup_span = info_span!("startup").entered();
 
     use glfw::fail_on_errors;
@@ -98,7 +116,8 @@ fn main() -> Result<()> {
     let mut frame_count: u64 = 0;
     while !window.should_close() {
         frame_count += 1;
-        let _frame_span = tracing::trace_span!("frame", frame = frame_count).entered();
+        // let _frame_span = tracing::trace_span!("frame", frame = frame_count).entered();
+        let _frame_span = tracing::trace_span!("frame").entered();
 
         let current_frame = unsafe { glfwGetTime() };
         delta_time = current_frame - last_frame;
@@ -210,6 +229,7 @@ fn main() -> Result<()> {
         window.swap_buffers();
     }
 
+    drop(_app_span);
     Ok(())
 }
 

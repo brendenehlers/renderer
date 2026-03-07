@@ -1,0 +1,6 @@
+# On macOS with Xcode 16+ Command Line Tools, the C++ stdlib headers are inside the SDK
+# rather than in the CLT's usr/include/c++/v1/. This causes tracy-client-sys (and other
+# crates that compile C++ via cc-rs) to fail with "'atomic' file not found".
+# Explicitly adding the SDK's C++ headers resolves this.
+[env]
+TRACY_CLIENT_SYS_CXXFLAGS = "-I/Library/Developer/CommandLineTools/SDKs/MacOSX15.2.sdk/usr/include/c++/v1"

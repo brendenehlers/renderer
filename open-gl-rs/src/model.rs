@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use image::{ImageBuffer, Rgba};
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, debug_span, error, info, info_span, instrument};
 
 use crate::{mesh, shader};
 
@@ -10,16 +10,17 @@ pub struct Model {
 }
 
 impl Model {
-    #[instrument(skip(importer), fields(path = %path))]
+    #[instrument(name = "load_model", skip(importer), fields(path = %path))]
     pub fn load(importer: &assimp::Importer, path: &str) -> anyhow::Result<Model> {
         debug!("beginning model load");
-        let scene = match importer.read_file(path) {
-            Ok(scene) => scene,
+        let _read_model_span = debug_span!("read_model");
+        let scene = _read_model_span.in_scope(|| match importer.read_file(path) {
+            Ok(scene) => Ok(scene),
             Err(s) => {
                 error!(error = %s, "assimp failed to read file");
                 anyhow::bail!(String::from(s))
             }
-        };
+        })?;
 
         if scene.is_incomplete() {
             error!("assimp scene is incomplete");
@@ -144,6 +145,10 @@ fn load_material_textures(
         let path_str = path.to_str().expect("path should be defined").to_string();
 
         let texture = img_cache.entry(path_str.clone()).or_insert_with(|| {
+            let _load_texture_span = tracing::info_span!(
+                "load_texture",
+                path = %path_str
+            );
             debug!(path = %path_str, "cache miss - loading image from disk");
             let img = image::ImageReader::open(&path)
                 .unwrap()
@@ -171,13 +176,13 @@ fn load_material_textures(
 fn create_texture(img: &ImageBuffer<Rgba<u8>, Vec<u8>>) -> anyhow::Result<u32> {
     // todo!("identify and fix memory leak likely in this method");
 
-    let _span = tracing::debug_span!(
-        "create_texture",
+    let _span = tracing::debug_span!("create_texture", width = img.width(), height = img.height())
+        .entered();
+    debug!(
         width = img.width(),
-        height = img.height()
-    )
-    .entered();
-    debug!(width = img.width(), height = img.height(), "uploading texture to GPU");
+        height = img.height(),
+        "uploading texture to GPU"
+    );
     let mut tex: u32 = 0;
     unsafe { gl::GenTextures(1, &mut tex) };
     unsafe {

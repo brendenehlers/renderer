@@ -2,90 +2,104 @@ use anyhow::{Ok, Result};
 use gl;
 use std::ffi::CString;
 use std::ptr;
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, debug_span, error, info, instrument};
 
 pub struct Shader {
     pub id: u32,
 }
 
 impl Shader {
-    #[instrument(fields(vertex_path = %vertex_path, fragment_path = %fragment_path))]
+    #[instrument(name = "build_shader", fields(vertex_path = %vertex_path, fragment_path = %fragment_path))]
     pub fn new(vertex_path: &str, fragment_path: &str) -> Result<Shader> {
         let mut success: i32 = 1;
         let mut info_log: [i8; 512] = [32; 512]; // init with spaces
 
         // read and compile vertex shader
-        debug!("compiling vertex shader");
-        let v_shader_code = CString::new(std::fs::read_to_string(vertex_path)?)?;
-        let v_shader: u32;
-        v_shader = unsafe { gl::CreateShader(gl::VERTEX_SHADER) };
-        unsafe {
-            gl::ShaderSource(v_shader, 1, [v_shader_code.as_ptr()].as_ptr(), ptr::null());
-            gl::CompileShader(v_shader);
-        }
+        let _v_shader_span = debug_span!("v_shader");
+        let v_shader = _v_shader_span.in_scope(|| {
+            debug!("compiling vertex shader");
+            let v_shader_code = CString::new(std::fs::read_to_string(vertex_path)?)?;
+            let v_shader: u32 = unsafe { gl::CreateShader(gl::VERTEX_SHADER) };
+            unsafe {
+                gl::ShaderSource(v_shader, 1, [v_shader_code.as_ptr()].as_ptr(), ptr::null());
+                gl::CompileShader(v_shader);
+            }
 
-        unsafe { gl::GetShaderiv(v_shader, gl::COMPILE_STATUS, &mut success) }
-        if success == gl::FALSE.try_into().unwrap() {
-            unsafe { gl::GetShaderInfoLog(v_shader, 512, ptr::null_mut(), info_log.as_mut_ptr()) };
-            let msg: String = info_log
-                .into_iter()
-                .map(|i| char::from_u32(i as u32).unwrap())
-                .collect();
-            error!(log = msg.trim(), "vertex shader compilation failed");
-            anyhow::bail!("ERROR::SHADER::VERTEX::COMPILATION::FAILED\n{}", msg.trim());
-        }
-        debug!("vertex shader compiled successfully");
+            unsafe { gl::GetShaderiv(v_shader, gl::COMPILE_STATUS, &mut success) }
+            if success == gl::FALSE.try_into().unwrap() {
+                unsafe {
+                    gl::GetShaderInfoLog(v_shader, 512, ptr::null_mut(), info_log.as_mut_ptr())
+                };
+                let msg: String = info_log
+                    .into_iter()
+                    .map(|i| char::from_u32(i as u32).unwrap())
+                    .collect();
+                error!(log = msg.trim(), "vertex shader compilation failed");
+                anyhow::bail!("ERROR::SHADER::VERTEX::COMPILATION::FAILED\n{}", msg.trim());
+            }
+            debug!("vertex shader compiled successfully");
+            Ok(v_shader)
+        })?;
 
         // read and compile fragment shader
-        debug!("compiling fragment shader");
-        let f_shader_code = CString::new(std::fs::read_to_string(fragment_path)?)?;
-        let f_shader: u32;
-        f_shader = unsafe { gl::CreateShader(gl::FRAGMENT_SHADER) };
-        unsafe {
-            gl::ShaderSource(f_shader, 1, [f_shader_code.as_ptr()].as_ptr(), ptr::null());
-            gl::CompileShader(f_shader);
-        }
+        let _f_shader_span = debug_span!("f_shader");
+        let f_shader = _f_shader_span.in_scope(|| {
+            debug!("compiling fragment shader");
+            let f_shader_code = CString::new(std::fs::read_to_string(fragment_path)?)?;
+            let f_shader: u32 = unsafe { gl::CreateShader(gl::FRAGMENT_SHADER) };
+            unsafe {
+                gl::ShaderSource(f_shader, 1, [f_shader_code.as_ptr()].as_ptr(), ptr::null());
+                gl::CompileShader(f_shader);
+            }
 
-        unsafe { gl::GetShaderiv(f_shader, gl::COMPILE_STATUS, &mut success) }
-        if success == gl::FALSE.try_into().unwrap() {
-            unsafe { gl::GetShaderInfoLog(f_shader, 512, ptr::null_mut(), info_log.as_mut_ptr()) };
-            let msg: String = info_log
-                .into_iter()
-                .map(|i| char::from_u32(i as u32).unwrap())
-                .collect();
-            error!(log = msg.trim(), "fragment shader compilation failed");
-            anyhow::bail!(
-                "ERROR::SHADER::FRAGMENT::COMPILATION::FAILED\n{}",
-                msg.trim()
-            );
-        }
-        debug!("fragment shader compiled successfully");
+            unsafe { gl::GetShaderiv(f_shader, gl::COMPILE_STATUS, &mut success) }
+            if success == gl::FALSE.try_into().unwrap() {
+                unsafe {
+                    gl::GetShaderInfoLog(f_shader, 512, ptr::null_mut(), info_log.as_mut_ptr())
+                };
+                let msg: String = info_log
+                    .into_iter()
+                    .map(|i| char::from_u32(i as u32).unwrap())
+                    .collect();
+                error!(log = msg.trim(), "fragment shader compilation failed");
+                anyhow::bail!(
+                    "ERROR::SHADER::FRAGMENT::COMPILATION::FAILED\n{}",
+                    msg.trim()
+                );
+            }
+            debug!("fragment shader compiled successfully");
+            Ok(f_shader)
+        })?;
 
         // create program and link shaders
-        let id: u32;
-        id = unsafe { gl::CreateProgram() };
-        unsafe {
-            gl::AttachShader(id, v_shader);
-            gl::AttachShader(id, f_shader);
-            gl::LinkProgram(id);
-        }
+        let _shader_program_span = debug_span!("shader_program");
+        let id: u32 = _shader_program_span.in_scope(|| {
+            let id = unsafe { gl::CreateProgram() };
+            unsafe {
+                gl::AttachShader(id, v_shader);
+                gl::AttachShader(id, f_shader);
+                gl::LinkProgram(id);
+            }
 
-        unsafe { gl::GetProgramiv(id, gl::LINK_STATUS, &mut success) };
-        if success == gl::FALSE.try_into().unwrap() {
-            unsafe { gl::GetProgramInfoLog(id, 512, ptr::null_mut(), info_log.as_mut_ptr()) };
-            let msg: String = info_log
-                .into_iter()
-                .map(|i| char::from_u32(i as u32).unwrap())
-                .collect();
-            error!(log = msg.trim(), "shader program linking failed");
-            anyhow::bail!("ERROR::SHADER::PROGRAM::LINKING_FAILED\n{}", msg.trim());
-        }
+            unsafe { gl::GetProgramiv(id, gl::LINK_STATUS, &mut success) };
+            if success == gl::FALSE.try_into().unwrap() {
+                unsafe { gl::GetProgramInfoLog(id, 512, ptr::null_mut(), info_log.as_mut_ptr()) };
+                let msg: String = info_log
+                    .into_iter()
+                    .map(|i| char::from_u32(i as u32).unwrap())
+                    .collect();
+                error!(log = msg.trim(), "shader program linking failed");
+                anyhow::bail!("ERROR::SHADER::PROGRAM::LINKING_FAILED\n{}", msg.trim());
+            }
 
-        // shaders linked, no longer needed
-        unsafe {
-            gl::DeleteShader(v_shader);
-            gl::DeleteShader(f_shader);
-        }
+            // shaders linked, no longer needed
+            unsafe {
+                gl::DeleteShader(v_shader);
+                gl::DeleteShader(f_shader);
+            }
+
+            Ok(id)
+        })?;
 
         info!(program_id = id, "shader program linked successfully");
         Ok(Shader { id })

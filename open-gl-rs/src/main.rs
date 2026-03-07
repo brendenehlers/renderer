@@ -2,44 +2,19 @@ extern crate gl;
 extern crate glfw;
 extern crate nalgebra_glm as glm;
 
+use ::tracing::{info, info_span, trace};
 use anyhow::Result;
 use glfw::{Context, ffi::glfwGetTime};
-use tracing::{info, info_span, trace};
 
 mod camera;
 mod imgui_glfw;
 mod mesh;
 mod model;
 mod shader;
+mod tracing;
 
 fn main() -> Result<()> {
-    use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
-
-    let env_filter = tracing_subscriber::EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"));
-
-    let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_target(true)
-        .with_thread_ids(false)
-        .with_file(false)
-        .with_line_number(false);
-
-    #[cfg(feature = "tracy")]
-    tracing_subscriber::registry()
-        .with(env_filter)
-        .with(fmt_layer)
-        .with(tracing_tracy::TracyLayer::default().with_filter(
-            tracing_subscriber::filter::filter_fn(|meta| {
-                meta.target().starts_with("new_open_gl_rs")
-            }),
-        ))
-        .init();
-
-    #[cfg(not(feature = "tracy"))]
-    tracing_subscriber::registry()
-        .with(env_filter)
-        .with(fmt_layer)
-        .init();
+    let _tracing_guard = tracing::init();
 
     let _app_span = info_span!("app").entered();
     let _startup_span = info_span!("startup").entered();
@@ -113,11 +88,9 @@ fn main() -> Result<()> {
     drop(_startup_span);
 
     info!("starting render engine (Space to toggle UI mode)");
-    let mut frame_count: u64 = 0;
+    let _render_loop = ::tracing::info_span!("render_loop").entered();
     while !window.should_close() {
-        frame_count += 1;
-        // let _frame_span = tracing::trace_span!("frame", frame = frame_count).entered();
-        let _frame_span = tracing::trace_span!("frame").entered();
+        let _frame_span = ::tracing::debug_span!("frame").entered();
 
         let current_frame = unsafe { glfwGetTime() };
         delta_time = current_frame - last_frame;
@@ -214,12 +187,12 @@ fn main() -> Result<()> {
         model_mat = glm::scale(&model_mat, &glm::vec3(1.0, 1.0, 1.0));
         shader.set_mat4("model", model_mat)?;
         {
-            let _draw_span = tracing::trace_span!("scene_draw").entered();
+            let _draw_span = ::tracing::trace_span!("scene_draw").entered();
             model.draw(&shader)?;
         }
 
         {
-            let _imgui_span = tracing::trace_span!("imgui").entered();
+            let _imgui_span = ::tracing::trace_span!("imgui").entered();
             let ui = imgui_glfw.new_frame(&mut window);
             render_ui(ui, &mut light_color);
             imgui_glfw.render();
@@ -228,8 +201,9 @@ fn main() -> Result<()> {
         trace!("frame end");
         window.swap_buffers();
     }
-
+    drop(_render_loop);
     drop(_app_span);
+
     Ok(())
 }
 

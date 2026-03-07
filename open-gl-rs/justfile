@@ -1,0 +1,37 @@
+default:
+    @just --list
+
+build:
+    cargo build
+
+run:
+    cargo run
+
+build-tracy:
+    cargo build --features tracy
+
+run-tracy:
+    cargo run --features tracy
+
+build-otel:
+    cargo build --features otel
+
+run-otel:
+    cargo run --features otel
+
+# Start a Grafana LGTM container that accepts OTLP telemetry.
+# Grafana UI: http://localhost:3000  (admin / admin)
+# OTLP HTTP:  http://localhost:4318
+# OTLP gRPC:  localhost:4317
+telemetry:
+    docker run --rm -d \
+        --name renderer-lgtm \
+        -p 3000:3000 \
+        -p 4317:4317 \
+        -p 4318:4318 \
+        -e GF_AUTH_ANONYMOUS_ENABLED=true \
+        -e GF_AUTH_ANONYMOUS_ORG_ROLE=Admin \
+        grafana/otel-lgtm:latest
+
+stop-telemetry:
+    docker stop renderer-lgtm

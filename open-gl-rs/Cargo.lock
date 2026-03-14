@@ -1422,6 +1422,7 @@ dependencies = [
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry_sdk",
+ "tokio",
  "tracing",
  "tracing-opentelemetry",
  "tracing-subscriber",
@@ -1621,6 +1622,8 @@ dependencies = [
  "rand 0.8.5",
  "serde_json",
  "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
  "tracing",
 ]
 

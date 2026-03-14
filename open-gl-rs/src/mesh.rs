@@ -59,7 +59,7 @@ impl Mesh {
         mesh
     }
 
-    pub fn draw(&self, shader: &shader::Shader) -> anyhow::Result<()> {
+    pub fn draw(&self, shader: &shader::Shader) -> anyhow::Result<i32> {
         let mut diffuse_nr = 1;
         let mut specular_nr = 1;
 
@@ -98,7 +98,7 @@ impl Mesh {
             gl::BindVertexArray(0);
         }
 
-        Ok(())
+        Ok(1)
     }
 }
 

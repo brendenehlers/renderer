@@ -42,8 +42,8 @@ impl Model {
         Ok(Model { meshes })
     }
 
-    pub fn draw(&self, shader: &shader::Shader) -> anyhow::Result<()> {
-        self.meshes.iter().try_for_each(|mesh| mesh.draw(shader))
+    pub fn draw(&self, shader: &shader::Shader) -> anyhow::Result<i32> {
+        self.meshes.iter().map(|mesh| mesh.draw(shader)).sum()
     }
 }
 

@@ -182,19 +182,21 @@ fn main() -> Result<()> {
         shader.set_mat4("projection", projection)?;
         shader.set_mat4("view", view)?;
 
+        let mut draw_calls = 0;
+
         let mut model_mat = glm::identity();
         model_mat = glm::translate(&model_mat, &glm::vec3(0.0, 0.0, 0.0));
         model_mat = glm::scale(&model_mat, &glm::vec3(1.0, 1.0, 1.0));
         shader.set_mat4("model", model_mat)?;
         {
             let _draw_span = ::tracing::trace_span!("scene_draw").entered();
-            model.draw(&shader)?;
+            draw_calls += model.draw(&shader)?;
         }
 
         {
             let _imgui_span = ::tracing::trace_span!("imgui").entered();
             let ui = imgui_glfw.new_frame(&mut window);
-            render_ui(ui, &mut light_color);
+            render_ui(ui, &mut light_color, &draw_calls);
             imgui_glfw.render();
         }
 
@@ -298,12 +300,14 @@ impl LightColor {
     }
 }
 
-fn render_ui(ui: &mut imgui::Ui, light: &mut LightColor) {
+fn render_ui(ui: &mut imgui::Ui, light: &mut LightColor, draw_calls: &i32) {
     ui.window("config")
-        .size([300.0, 100.0], imgui::Condition::FirstUseEver)
+        .size([300.0, 200.0], imgui::Condition::FirstUseEver)
         .build(|| {
             ui.slider("red", 0, 255, &mut light.r);
             ui.slider("green", 0, 255, &mut light.g);
             ui.slider("blue", 0, 255, &mut light.b);
+            ui.separator();
+            ui.text(format!("draw calls last frame: {}", draw_calls));
         });
 }
